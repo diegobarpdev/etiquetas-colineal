@@ -1,4 +1,20 @@
-FROM node:20-bookworm-slim
+FROM node:20-bookworm-slim AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY prisma ./prisma
+RUN npx prisma generate
+
+COPY tsconfig.json vitest.config.ts ./
+COPY src ./src
+COPY assets ./assets
+
+RUN npm run build
+
+FROM node:20-bookworm-slim AS runner
 
 RUN apt-get update && apt-get install -y \
     chromium \
@@ -17,16 +33,14 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --omit=dev && npm install tsx prisma --no-save
 
-COPY prisma ./prisma
-RUN npx prisma generate
-
-COPY tsconfig.json vitest.config.ts ./
-COPY src ./src
-COPY assets ./assets
-
-RUN npm run build
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/src/templates ./src/templates
+COPY --from=builder /app/assets ./assets
 
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
