@@ -1,0 +1,135 @@
+.label-carpinteria {
+  width: 150mm;
+  height: 100mm;
+  page-break-inside: avoid;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #000;
+  background: #fff;
+}
+
+.label-carpinteria .label {
+  width: 150mm;
+  height: 100mm;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 4mm 5mm 3.5mm;
+}
+
+.label-carpinteria .el-header {
+  flex: 0 0 auto;
+  margin: 0 0 3mm;
+  font-size: 13pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.label-carpinteria .el-body {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  column-gap: 5mm;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.label-carpinteria .el-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  min-width: 0;
+}
+
+.label-carpinteria .el-logo {
+  width: 52mm;
+  height: 16mm;
+  object-fit: contain;
+  object-position: left center;
+  flex: 0 0 auto;
+}
+
+.label-carpinteria .el-details {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  min-height: 0;
+  padding: 2mm 0;
+}
+
+.label-carpinteria .el-short-name,
+.label-carpinteria .el-ns,
+.label-carpinteria .el-bulto,
+.label-carpinteria .el-fecha,
+.label-carpinteria .el-peso,
+.label-carpinteria .el-inspector-label,
+.label-carpinteria .el-inspector {
+  margin: 0;
+  font-size: 10.5pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  line-height: 1.25;
+}
+
+.label-carpinteria .el-short-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.label-carpinteria .el-inspector {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.label-carpinteria .el-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  height: 100%;
+  align-items: stretch;
+}
+
+.label-carpinteria .el-barcode-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.label-carpinteria .el-barcode {
+  width: 100%;
+  max-width: 72mm;
+  height: 100%;
+  max-height: 18mm;
+  min-height: 14mm;
+  object-fit: fill;
+}
+
+.label-carpinteria .el-barcode-text {
+  margin: 1.2mm 0 0;
+  font-size: 10pt;
+  font-weight: bold;
+  letter-spacing: 0.2mm;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.label-carpinteria .el-footer {
+  flex: 0 0 auto;
+  margin-top: 3mm;
+  padding-top: 2mm;
+  font-size: 10.5pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.2;
+}

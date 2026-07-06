@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Etiquetas Colineal</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Etiquetas Colineal</h1>
+      <p class="subtitle">Generación de etiquetas para impresoras Zebra (150 × 100 mm)</p>
+    </header>
+
+    <section class="search-section">
+      <label for="order-select">Orden de fabricación</label>
+      <input
+        type="text"
+        id="order-filter"
+        class="order-filter"
+        placeholder="Filtrar por orden o lote…"
+        autocomplete="off"
+      />
+      <select id="order-select">
+        <option value="">Selecciona una orden…</option>
+      </select>
+    </section>
+
+    <section id="order-section" class="order-section hidden">
+      <div class="order-header">
+        <div>
+          <h2 id="order-name"></h2>
+          <p id="order-meta"></p>
+        </div>
+        <div class="label-count">
+          <span class="count-number" id="total-labels">0</span>
+          <span class="count-label">etiquetas</span>
+        </div>
+      </div>
+
+      <h3>Resumen por producto</h3>
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Referencia</th>
+            <th>Producto</th>
+            <th>Plantilla</th>
+            <th>Cant. orden</th>
+            <th>Cant. componente</th>
+            <th>Bultos</th>
+            <th>Total etiquetas</th>
+          </tr>
+        </thead>
+        <tbody id="summary-body"></tbody>
+      </table>
+
+      <div class="template-picker">
+        <label for="template-select">Plantilla de impresión</label>
+        <select id="template-select">
+          <option value="bulto-estandar">Producto terminado (muebles)</option>
+        </select>
+        <p id="template-hint" class="template-hint"></p>
+      </div>
+
+      <section id="html-preview-section" class="html-preview-section hidden">
+        <div class="preview-header">
+          <h3>Vista previa</h3>
+          <div class="preview-controls">
+            <button id="prev-label-btn" type="button" class="icon-btn" title="Etiqueta anterior">←</button>
+            <span id="label-index-text" class="label-index-text">1 / 1</span>
+            <button id="next-label-btn" type="button" class="icon-btn" title="Etiqueta siguiente">→</button>
+            <label class="view-all-toggle">
+              <input type="checkbox" id="view-all-labels" />
+              Ver todas
+            </label>
+          </div>
+        </div>
+        <div id="html-preview-loading" class="preview-loading hidden">Actualizando vista previa…</div>
+        <iframe id="html-preview" title="Vista previa de etiqueta"></iframe>
+      </section>
+
+      <div class="actions">
+        <button id="generate-pdf-btn" type="button" class="primary">
+          Ver PDF para imprimir
+        </button>
+        <button id="download-pdf-btn" type="button" class="secondary">
+          Descargar PDF
+        </button>
+      </div>
+    </section>
+
+    <section id="pdf-preview-section" class="pdf-preview-section hidden">
+      <h3>PDF listo para imprimir</h3>
+      <iframe id="pdf-preview" title="Vista previa del PDF"></iframe>
+    </section>
+
+    <div id="loading" class="loading hidden">Generando PDF…</div>
+    <div id="error" class="error hidden"></div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

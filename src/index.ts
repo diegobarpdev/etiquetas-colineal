@@ -1,0 +1,90 @@
+import 'dotenv/config';
+import express from 'express';
+import { existsSync } from 'fs';
+import { networkInterfaces } from 'os';
+import { join } from 'path';
+import apiRouter from './routes/api';
+import { closeBrowser } from './services/pdf-generator.service';
+
+function resolvePublicDir(): string {
+  const candidates = [
+    join(__dirname, 'public'),
+    join(process.cwd(), 'src', 'public'),
+  ];
+  for (const dir of candidates) {
+    if (existsSync(join(dir, 'index.html'))) return dir;
+  }
+  return join(process.cwd(), 'src', 'public');
+}
+
+const app = express();
+const HOST = process.env.HOST || '0.0.0.0';
+const PORT = parseInt(process.env.PORT || '3000', 10);
+
+function getLocalIpv4Addresses(): string[] {
+  const addresses = new Set<string>();
+
+  for (const interfaces of Object.values(networkInterfaces())) {
+    if (!interfaces) continue;
+    for (const iface of interfaces) {
+      const isIpv4 = String(iface.family) === 'IPv4';
+      if (isIpv4 && !iface.internal) {
+        addresses.add(iface.address);
+      }
+    }
+  }
+
+  return [...addresses];
+}
+
+app.use(express.json());
+app.use(express.static(resolvePublicDir()));
+app.use('/api', apiRouter);
+
+app.get('/health', (_req, res) => {
+  const urls = [
+    `http://localhost:${PORT}`,
+    ...getLocalIpv4Addresses().map((ip) => `http://${ip}:${PORT}`),
+  ];
+
+  res.json({
+    status: 'ok',
+    host: HOST,
+    port: PORT,
+    urls,
+  });
+});
+
+const server = app.listen(PORT, HOST, () => {
+  const ips = getLocalIpv4Addresses();
+
+  console.log('');
+  console.log('=== Etiquetas Colineal ===');
+  console.log(`Local:  http://localhost:${PORT}`);
+
+  if (ips.length > 0) {
+    console.log('Red (usa esta URL desde otra PC en la misma red):');
+    for (const ip of ips) {
+      console.log(`  → http://${ip}:${PORT}`);
+    }
+  } else {
+    console.log('No se detectó IP de red local (Wi‑Fi/Ethernet).');
+  }
+
+  console.log(`Escuchando en ${HOST}:${PORT}`);
+  console.log('');
+});
+
+process.on('SIGINT', async () => {
+  await closeBrowser();
+  server.close();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  await closeBrowser();
+  server.close();
+  process.exit(0);
+});
+
+export default app;

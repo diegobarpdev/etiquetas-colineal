@@ -1,0 +1,50 @@
+{
+  "name": "etiquetas-colineal",
+  "version": "1.0.0",
+  "description": "Sistema de impresión de etiquetas Colineal para impresoras Zebra",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc && cp -r src/public dist/public",
+    "start": "node dist/index.js",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f app",
+    "docker:rebuild": "docker compose up --build -d --force-recreate",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "keywords": [
+    "etiquetas",
+    "zebra",
+    "odoo",
+    "colineal"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "bwip-js": "^4.11.2",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "handlebars": "^4.7.8",
+    "puppeteer": "^24.10.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.30",
+    "@types/qrcode": "^1.5.5",
+    "prisma": "^6.9.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
