@@ -86,7 +86,7 @@ Abrir http://localhost:3000
 |---|---|
 | `PLDOR/OPR/00564` | Kit cama + velador |
 | `PLDOR/OPR/00565` | Colchones Milo |
-| `PSTAB/OPR/00859` | Tableros conforme (2 bultos) |
+| `PSTAB/OPR/00859` | Tableros conforme (1 bulto) |
 | `PLCAJ/OPR/00083` | Velador Capri conforme papel (54 uds) |
 | `PLCAJ/OPR/00084` | Velador Capri Carpenter (54 uds) |
 

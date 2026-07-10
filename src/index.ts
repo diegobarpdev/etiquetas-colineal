@@ -1,10 +1,10 @@
 import 'dotenv/config';
 import express from 'express';
 import { existsSync } from 'fs';
-import { networkInterfaces } from 'os';
 import { join } from 'path';
 import apiRouter from './routes/api';
 import { closeBrowser } from './services/pdf-generator.service';
+import { getLanIpv4Addresses, getPublicUrls } from './lib/network';
 
 function resolvePublicDir(): string {
   const candidates = [
@@ -22,19 +22,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
 function getLocalIpv4Addresses(): string[] {
-  const addresses = new Set<string>();
-
-  for (const interfaces of Object.values(networkInterfaces())) {
-    if (!interfaces) continue;
-    for (const iface of interfaces) {
-      const isIpv4 = String(iface.family) === 'IPv4';
-      if (isIpv4 && !iface.internal) {
-        addresses.add(iface.address);
-      }
-    }
-  }
-
-  return [...addresses];
+  return getLanIpv4Addresses();
 }
 
 app.use(express.json());
@@ -42,16 +30,14 @@ app.use(express.static(resolvePublicDir()));
 app.use('/api', apiRouter);
 
 app.get('/health', (_req, res) => {
-  const urls = [
-    `http://localhost:${PORT}`,
-    ...getLocalIpv4Addresses().map((ip) => `http://${ip}:${PORT}`),
-  ];
+  const urls = getPublicUrls(PORT);
 
   res.json({
     status: 'ok',
     host: HOST,
     port: PORT,
     urls,
+    networkUrl: urls.find((url) => !url.includes('localhost')) ?? urls[0],
   });
 });
 

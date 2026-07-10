@@ -146,12 +146,12 @@ async function main() {
     },
   });
 
-  // Tableros — producto conforme (2 bultos por unidad)
+  // Tableros — producto conforme (1 bulto por unidad)
   const tableros = await prisma.product.upsert({
     where: { internalRef: 'SMT01COL10400DI010' },
     update: {
       labelTemplateId: conformeTemplate.id,
-      numBultos: 2,
+      numBultos: 1,
     },
     create: {
       ean: 'SMT01COL10400DI010',
@@ -163,7 +163,7 @@ async function main() {
       width: 0,
       length: 0,
       volumeM3: 0,
-      numBultos: 2,
+      numBultos: 1,
       labelTemplateId: conformeTemplate.id,
     },
   });

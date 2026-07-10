@@ -315,11 +315,11 @@ describe('LabelExplosionService', () => {
   });
 
   describe('producto conforme', () => {
-    it('genera una etiqueta por bulto físico cuando numBultos > 1', () => {
+    it('genera una etiqueta 1-1 para PSTAB/OPR/00859', () => {
       const product = makeProduct({
         internalRef: 'SMT01COL10400DI010',
         name: 'SEM TABLEROS SILLON AUX DIDI SUITE',
-        numBultos: 2,
+        numBultos: 1,
         labelTemplate: {
           id: 5,
           code: 'producto-conforme',
@@ -340,21 +340,49 @@ describe('LabelExplosionService', () => {
       });
 
       const labels = explodeLabels(order);
-      expect(labels).toHaveLength(2);
+      expect(labels).toHaveLength(1);
       expect(labels[0].lotNumber).toBe('LOTE TAB-0620-001');
       expect(labels[0].orderName).toBe('PSTAB/OPR/00859');
       expect(labels[0].qrLotNumber).toBe('LOTE TAB-0620-001');
+      expect(labels[0].bultoCurrent).toBe(1);
+      expect(labels[0].bultoTotal).toBe(1);
+      expect(labels[0].serialCurrent).toBe(1);
+      expect(labels[0].serialTotal).toBe(1);
+      expect(labels[0].conformeTitle).toBe('PRODUCTO CONFORME');
+      expect(labels[0].madeIn).toBe('CUENCA - ECUADOR');
+      expect(labels[0].inspectorName).toBe('LOPEZ FAJARDO LUIS VICENTE');
+      expect(labels[0].qrSku).toBe('SMT01COL10400DI010');
+      expect(labels[0].showInternalRefQr).toBe(false);
+    });
+
+    it('genera una etiqueta por bulto físico cuando numBultos > 1', () => {
+      const product = makeProduct({
+        internalRef: 'CONF-MULTI-BULTO',
+        name: 'Producto conforme multi-bulto',
+        numBultos: 2,
+        labelTemplate: {
+          id: 5,
+          code: 'producto-conforme',
+          name: 'Producto conforme',
+          htmlTemplate: '',
+          css: '',
+          isActive: true,
+        },
+        boms: [{ type: 'manufacture', lines: [] }],
+      });
+
+      const order = makeOrder([
+        { quantity: { toString: () => '1' } as never, product },
+      ]);
+
+      const labels = explodeLabels(order);
+      expect(labels).toHaveLength(2);
       expect(labels[0].bultoCurrent).toBe(1);
       expect(labels[0].bultoTotal).toBe(2);
       expect(labels[1].bultoCurrent).toBe(2);
       expect(labels[0].serialCurrent).toBe(1);
       expect(labels[0].serialTotal).toBe(2);
       expect(labels[1].serialCurrent).toBe(2);
-      expect(labels[0].conformeTitle).toBe('PRODUCTO CONFORME');
-      expect(labels[0].madeIn).toBe('CUENCA - ECUADOR');
-      expect(labels[0].inspectorName).toBe('LOPEZ FAJARDO LUIS VICENTE');
-      expect(labels[0].qrSku).toBe('SMT01COL10400DI010');
-      expect(labels[0].showInternalRefQr).toBe(false);
     });
   });
 

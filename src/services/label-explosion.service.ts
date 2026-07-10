@@ -1,4 +1,8 @@
-import { LabelData, LabelSummaryItem, OrderWithLines, ProductWithBom } from '../types';
+import { LabelData, LabelSelectionGroup, LabelSummaryItem, OrderWithLines, ProductWithBom } from '../types';
+import {
+  componentGroupId,
+  lineGroupId,
+} from './label-selection.service';
 import {
   COLCHON_FACTORY_FOOTER,
   COLCHON_V1_FINISH_INSTRUCTIONS,
@@ -75,7 +79,7 @@ function buildLabelData(
   parentProduct?: ProductWithBom,
   serialCurrent?: number,
   serialTotal?: number,
-): LabelData {
+): Omit<LabelData, 'selectionGroupIds' | 'globalIndex'> {
   const componentName = product.shortName || product.name;
   const titleName = parentProduct
     ? parentProduct.shortName || parentProduct.name
@@ -141,24 +145,91 @@ function explodeProduct(
   return [{ product, componentQty: orderQty }];
 }
 
-export function explodeLabels(order: OrderWithLines): LabelData[] {
-  const labels: LabelData[] = [];
+function pushLabel(
+  labels: LabelData[],
+  label: Omit<LabelData, 'selectionGroupIds' | 'globalIndex'>,
+  selectionGroupIds: string[],
+  globalIndex: number,
+): void {
+  labels.push({
+    ...label,
+    selectionGroupIds,
+    globalIndex,
+  });
+}
 
-  for (const line of order.lines) {
+export function buildLabelGroups(order: OrderWithLines): LabelSelectionGroup[] {
+  const groups: LabelSelectionGroup[] = [];
+
+  order.lines.forEach((line, lineIndex) => {
     const orderQty = Number(line.quantity.toString());
     const kitBom = getKitBom(line.product);
+    const lineId = lineGroupId(lineIndex);
 
     if (kitBom) {
-      // Kit: cada línea LdM = un bulto (1..N); la cantidad LdM define cuántas etiquetas de ese bulto
+      const children = kitBom.lines.map((bomLine) => {
+        const bomLineQty = Number(bomLine.quantity.toString());
+        const component = bomLine.componentProduct;
+        return {
+          id: componentGroupId(lineIndex, component.internalRef),
+          label: component.shortName || component.name,
+          parentId: lineId,
+          internalRef: component.internalRef,
+          labelCount: orderQty * bomLineQty,
+          isKitParent: false,
+        };
+      });
+
+      groups.push({
+        id: lineId,
+        label: `${line.product.shortName || line.product.name} (kit completo)`,
+        internalRef: line.product.internalRef,
+        labelCount: children.reduce((sum, child) => sum + child.labelCount, 0),
+        isKitParent: true,
+      });
+      groups.push(...children);
+    } else {
+      const bultosPerUnit = Math.max(1, line.product.numBultos);
+      groups.push({
+        id: lineId,
+        label: line.product.shortName || line.product.name,
+        internalRef: line.product.internalRef,
+        labelCount: orderQty * bultosPerUnit,
+        isKitParent: false,
+      });
+    }
+  });
+
+  return groups;
+}
+
+export function explodeLabels(order: OrderWithLines): LabelData[] {
+  const labels: LabelData[] = [];
+  let globalIndex = 0;
+
+  order.lines.forEach((line, lineIndex) => {
+    const orderQty = Number(line.quantity.toString());
+    const kitBom = getKitBom(line.product);
+    const lineId = lineGroupId(lineIndex);
+
+    if (kitBom) {
       const totalBultos = kitBom.lines.length;
       for (let kitUnit = 0; kitUnit < orderQty; kitUnit++) {
-        kitBom.lines.forEach((bomLine, lineIndex) => {
+        kitBom.lines.forEach((bomLine, lineIndexInKit) => {
           const bomLineQty = Number(bomLine.quantity.toString());
           const product = bomLine.componentProduct;
-          const bultoCurrent = lineIndex + 1;
+          const bultoCurrent = lineIndexInKit + 1;
+          const compId = componentGroupId(lineIndex, product.internalRef);
+          const groupIds = [lineId, compId];
 
           for (let i = 0; i < bomLineQty; i++) {
-            labels.push(buildLabelData(product, order, bultoCurrent, totalBultos, line.product));
+            pushLabel(
+              labels,
+              buildLabelData(product, order, bultoCurrent, totalBultos, line.product),
+              groupIds,
+              globalIndex,
+            );
+            globalIndex += 1;
           }
         });
       }
@@ -172,7 +243,8 @@ export function explodeLabels(order: OrderWithLines): LabelData[] {
         for (let bulto = 1; bulto <= bultosPerUnit; bulto++) {
           if (isConforme) serial += 1;
 
-          labels.push(
+          pushLabel(
+            labels,
             buildLabelData(
               line.product,
               order,
@@ -182,11 +254,14 @@ export function explodeLabels(order: OrderWithLines): LabelData[] {
               isConforme ? serial : undefined,
               isConforme ? totalSerial : undefined,
             ),
+            [lineId],
+            globalIndex,
           );
+          globalIndex += 1;
         }
       }
     }
-  }
+  });
 
   return labels;
 }
@@ -276,6 +351,8 @@ export function applyTemplateOverride(
       showInternalRefQr:
         extras.showInternalRefQr ?? label.showInternalRefQr,
       qrSku: skuQrFromLabel(templateCode, label),
+      selectionGroupIds: label.selectionGroupIds,
+      globalIndex: label.globalIndex,
       ...(withOrderSerial
         ? { serialCurrent: serial.current, serialTotal: serial.total }
         : {}),
@@ -288,6 +365,7 @@ export function buildLabelPreview(order: OrderWithLines, templateOverride?: stri
   return {
     totalLabels: labels.length,
     summary: buildLabelSummary(order),
+    groups: buildLabelGroups(order),
     labels,
   };
 }

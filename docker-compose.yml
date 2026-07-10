@@ -21,12 +21,14 @@ services:
     build: .
     container_name: etiquetas-colineal-app
     restart: unless-stopped
+    shm_size: '1gb'
     ports:
       - "3000:3000"
     environment:
       DATABASE_URL: postgresql://colineal:colineal@postgres:5432/etiquetas?schema=public
       HOST: 0.0.0.0
       PORT: 3000
+      PUBLIC_URL: ${PUBLIC_URL:-}
       SEED_ON_START: "true"
     depends_on:
       postgres:

@@ -30,6 +30,10 @@ export interface LabelData {
   conformeSubtitle?: string;
   madeIn?: string;
   inspectorName?: string;
+  /** Grupos para filtrar impresión (línea de orden, componente de kit). */
+  selectionGroupIds: string[];
+  /** Índice global en la explosión completa de la orden (0-based). */
+  globalIndex: number;
 }
 
 export interface ProductWithBom extends Product {
@@ -82,4 +86,14 @@ export interface LabelPreview {
   totalLabels: number;
   summary: LabelSummaryItem[];
   labels: LabelData[];
+  groups: LabelSelectionGroup[];
+}
+
+export interface LabelSelectionGroup {
+  id: string;
+  label: string;
+  parentId?: string;
+  internalRef: string;
+  labelCount: number;
+  isKitParent: boolean;
 }

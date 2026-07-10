@@ -7,98 +7,185 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Etiquetas Colineal</h1>
-      <p class="subtitle">Generación de etiquetas para impresoras Zebra (150 × 100 mm)</p>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <h1>Etiquetas Colineal</h1>
+        <p class="subtitle">Impresión Zebra · 150 × 100 mm</p>
+      </div>
+      <button type="button" id="toggle-printer-settings" class="ghost-btn" aria-expanded="false">
+        Impresora
+      </button>
     </header>
+    <p id="network-url-banner" class="network-banner hidden" role="status"></p>
 
-    <section class="search-section">
-      <label for="order-select">Orden de fabricación</label>
-      <input
-        type="text"
-        id="order-filter"
-        class="order-filter"
-        placeholder="Filtrar por orden o lote…"
-        autocomplete="off"
-      />
-      <select id="order-select">
-        <option value="">Selecciona una orden…</option>
-      </select>
+    <section class="printer-drawer hidden" id="printer-settings" aria-label="Configuración de impresora">
+      <div class="printer-grid">
+        <div class="printer-field">
+          <label for="printer-mode">Modo</label>
+          <select id="printer-mode">
+            <option value="system">Sistema (navegador)</option>
+            <option value="zebra">Zebra Browser Print</option>
+          </select>
+        </div>
+        <div class="printer-field">
+          <label for="printer-copies">Copias</label>
+          <input type="number" id="printer-copies" min="1" max="99" value="1" />
+        </div>
+        <div id="system-printer-row" class="printer-field printer-field-wide">
+          <label for="system-printer-name">Impresora (referencia)</label>
+          <input
+            type="text"
+            id="system-printer-name"
+            placeholder="Ej: ZDesigner ZD420"
+            autocomplete="off"
+          />
+        </div>
+        <div id="zebra-printer-row" class="printer-field printer-field-wide hidden">
+          <div class="zebra-toolbar">
+            <label for="zebra-printer-select">Impresora Zebra</label>
+            <button type="button" id="refresh-printers-btn" class="secondary compact">
+              Buscar
+            </button>
+          </div>
+          <select id="zebra-printer-select">
+            <option value="">Busca impresoras…</option>
+          </select>
+          <p id="zebra-status" class="printer-hint">Requiere Zebra Browser Print instalado.</p>
+        </div>
+      </div>
+      <p id="printer-save-status" class="printer-save-status hidden" role="status"></p>
     </section>
 
-    <section id="order-section" class="order-section hidden">
-      <div class="order-header">
-        <div>
-          <h2 id="order-name"></h2>
-          <p id="order-meta"></p>
-        </div>
-        <div class="label-count">
-          <span class="count-number" id="total-labels">0</span>
-          <span class="count-label">etiquetas</span>
-        </div>
-      </div>
+    <div id="status-banner" class="status-banner hidden" role="status"></div>
+    <div id="error" class="error-banner hidden" role="alert"></div>
 
-      <h3>Resumen por producto</h3>
-      <table class="summary-table">
-        <thead>
-          <tr>
-            <th>Referencia</th>
-            <th>Producto</th>
-            <th>Plantilla</th>
-            <th>Cant. orden</th>
-            <th>Cant. componente</th>
-            <th>Bultos</th>
-            <th>Total etiquetas</th>
-          </tr>
-        </thead>
-        <tbody id="summary-body"></tbody>
-      </table>
+    <main class="workspace">
+      <aside class="controls-panel">
+        <section class="panel-card search-card">
+          <label for="order-filter">Orden de fabricación</label>
+          <div class="search-row">
+            <input
+              type="text"
+              id="order-filter"
+              placeholder="Buscar orden o lote…"
+              autocomplete="off"
+            />
+            <select id="order-select" aria-label="Seleccionar orden">
+              <option value="">Seleccionar…</option>
+            </select>
+          </div>
+        </section>
 
-      <div class="template-picker">
-        <label for="template-select">Plantilla de impresión</label>
-        <select id="template-select">
-          <option value="bulto-estandar">Producto terminado (muebles)</option>
-        </select>
-        <p id="template-hint" class="template-hint"></p>
-      </div>
+        <section id="order-section" class="panel-card order-card hidden">
+          <div class="order-header">
+            <div class="order-info">
+              <h2 id="order-name"></h2>
+              <p id="order-meta"></p>
+            </div>
+            <div class="label-count" title="Total de etiquetas">
+              <span class="count-number" id="total-labels">0</span>
+              <span class="count-label">etiq.</span>
+            </div>
+          </div>
 
-      <section id="html-preview-section" class="html-preview-section hidden">
-        <div class="preview-header">
-          <h3>Vista previa</h3>
-          <div class="preview-controls">
-            <button id="prev-label-btn" type="button" class="icon-btn" title="Etiqueta anterior">←</button>
+          <details class="summary-details">
+            <summary>Resumen por producto</summary>
+            <div class="table-scroll">
+              <table class="summary-table">
+                <thead>
+                  <tr>
+                    <th>Ref.</th>
+                    <th>Producto</th>
+                    <th>Bultos</th>
+                    <th>Etiquetas</th>
+                  </tr>
+                </thead>
+                <tbody id="summary-body"></tbody>
+              </table>
+            </div>
+          </details>
+
+          <div class="template-picker">
+            <label for="template-select">Plantilla</label>
+            <select id="template-select">
+              <option value="bulto-estandar">Producto terminado (muebles)</option>
+            </select>
+            <p id="template-hint" class="template-hint"></p>
+          </div>
+
+          <details class="selection-details" id="selection-details">
+            <summary>
+              Qué imprimir
+              <span id="selection-summary-hint" class="selection-summary-hint"></span>
+            </summary>
+            <div class="selection-panel">
+              <div class="selection-toolbar">
+                <button type="button" id="select-all-groups-btn" class="secondary compact">
+                  Todas
+                </button>
+                <button type="button" id="clear-all-groups-btn" class="secondary compact">
+                  Ninguna
+                </button>
+              </div>
+              <div id="selection-groups" class="selection-groups" role="group" aria-label="Productos a imprimir"></div>
+              <div class="selection-range">
+                <label for="range-from">Rango de etiquetas (opcional)</label>
+                <div class="range-row">
+                  <input type="number" id="range-from" min="1" placeholder="Desde" />
+                  <span class="range-sep">—</span>
+                  <input type="number" id="range-to" min="1" placeholder="Hasta" />
+                </div>
+                <p class="selection-hint">Ej: del 1 al 10, o solo la etiqueta 5.</p>
+              </div>
+            </div>
+          </details>
+
+          <div class="actions">
+            <button id="print-labels-btn" type="button" class="primary block">
+              Imprimir etiquetas
+            </button>
+            <div class="actions-row">
+              <button id="generate-pdf-btn" type="button" class="secondary">Ver PDF</button>
+              <button id="download-pdf-btn" type="button" class="secondary">Descargar</button>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="preview-panel hidden" id="preview-panel">
+        <div class="preview-toolbar">
+          <div class="preview-tabs" role="tablist">
+            <button type="button" id="tab-html" class="preview-tab active" data-tab="html" role="tab">
+              Vista previa
+            </button>
+            <button type="button" id="tab-pdf" class="preview-tab" data-tab="pdf" role="tab">
+              PDF
+            </button>
+          </div>
+          <div id="html-preview-controls" class="preview-controls">
+            <button id="prev-label-btn" type="button" class="icon-btn" title="Anterior">←</button>
             <span id="label-index-text" class="label-index-text">1 / 1</span>
-            <button id="next-label-btn" type="button" class="icon-btn" title="Etiqueta siguiente">→</button>
+            <button id="next-label-btn" type="button" class="icon-btn" title="Siguiente">→</button>
             <label class="view-all-toggle">
               <input type="checkbox" id="view-all-labels" />
-              Ver todas
+              Todas
             </label>
           </div>
         </div>
-        <div id="html-preview-loading" class="preview-loading hidden">Actualizando vista previa…</div>
-        <iframe id="html-preview" title="Vista previa de etiqueta"></iframe>
+        <div id="html-preview-loading" class="preview-loading hidden">Actualizando…</div>
+        <div class="preview-frame-wrap">
+          <iframe id="html-preview" class="preview-frame" title="Vista previa de etiqueta"></iframe>
+          <iframe id="pdf-preview" class="preview-frame hidden" title="Vista previa del PDF"></iframe>
+          <div id="preview-placeholder" class="preview-placeholder hidden">
+            Selecciona una orden para ver la etiqueta
+          </div>
+        </div>
       </section>
-
-      <div class="actions">
-        <button id="generate-pdf-btn" type="button" class="primary">
-          Ver PDF para imprimir
-        </button>
-        <button id="download-pdf-btn" type="button" class="secondary">
-          Descargar PDF
-        </button>
-      </div>
-    </section>
-
-    <section id="pdf-preview-section" class="pdf-preview-section hidden">
-      <h3>PDF listo para imprimir</h3>
-      <iframe id="pdf-preview" title="Vista previa del PDF"></iframe>
-    </section>
-
-    <div id="loading" class="loading hidden">Generando PDF…</div>
-    <div id="error" class="error hidden"></div>
+    </main>
   </div>
 
+  <script src="/printer.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

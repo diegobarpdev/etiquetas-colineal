@@ -1,5 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { buildLabelPreview } from '../services/label-explosion.service';
+import {
+  applyLabelSelection,
+  parseLabelSelection,
+} from '../services/label-selection.service';
 import { buildLabelsHtml, generateLabelsPdf } from '../services/pdf-generator.service';
 import {
   getOrderById,
@@ -32,6 +36,10 @@ function handleApiError(error: unknown, res: Response, defaultMessage: string) {
       res.status(400).json({ error: error.message });
       return;
     }
+    if (error.message === 'No hay etiquetas que coincidan con la selección') {
+      res.status(400).json({ error: error.message });
+      return;
+    }
   }
   console.error(error);
   res.status(500).json({ error: defaultMessage });
@@ -44,6 +52,22 @@ function parseLabelIndex(raw: unknown, total: number): number | undefined {
     throw new Error('Índice de etiqueta fuera de rango');
   }
   return index;
+}
+
+function resolveLabelsFromRequest(
+  order: NonNullable<Awaited<ReturnType<typeof getOrderById>>>,
+  query: Record<string, unknown>,
+  templateOverride?: string,
+) {
+  const preview = buildLabelPreview(order, templateOverride);
+  const selection = parseLabelSelection(query);
+  const labels = applyLabelSelection(preview.labels, selection);
+
+  if (labels.length === 0 && preview.labels.length > 0) {
+    throw new Error('No hay etiquetas que coincidan con la selección');
+  }
+
+  return { preview, selection, labels };
 }
 
 router.get('/orders', async (req: Request, res: Response) => {
@@ -77,7 +101,11 @@ router.get('/orders/:id', async (req: Request, res: Response) => {
     }
 
     const templateOverride = resolveTemplateOverride(req.query.template);
-    const preview = buildLabelPreview(order, templateOverride);
+    const { preview, labels } = resolveLabelsFromRequest(
+      order,
+      req.query as Record<string, unknown>,
+      templateOverride,
+    );
     res.json({
       order: {
         id: order.id,
@@ -94,8 +122,10 @@ router.get('/orders/:id', async (req: Request, res: Response) => {
         })),
       },
       preview: {
-        totalLabels: preview.totalLabels,
+        totalLabels: labels.length,
+        totalLabelsAll: preview.totalLabels,
         summary: preview.summary,
+        groups: preview.groups,
       },
     });
   } catch (error) {
@@ -118,8 +148,16 @@ router.get('/orders/:id/labels/preview', async (req: Request, res: Response) => 
     }
 
     const templateOverride = resolveTemplateOverride(req.query.template);
-    const preview = buildLabelPreview(order, templateOverride);
-    res.json(preview);
+    const { preview, labels } = resolveLabelsFromRequest(
+      order,
+      req.query as Record<string, unknown>,
+      templateOverride,
+    );
+    res.json({
+      ...preview,
+      totalLabels: labels.length,
+      labels,
+    });
   } catch (error) {
     handleApiError(error, res, 'Error al generar vista previa');
   }
@@ -140,14 +178,18 @@ router.get('/orders/:id/labels/html', async (req: Request, res: Response) => {
     }
 
     const templateOverride = resolveTemplateOverride(req.query.template);
-    const preview = buildLabelPreview(order, templateOverride);
-    if (preview.labels.length === 0) {
+    const { labels } = resolveLabelsFromRequest(
+      order,
+      req.query as Record<string, unknown>,
+      templateOverride,
+    );
+    if (labels.length === 0) {
       res.status(400).json({ error: 'La orden no tiene etiquetas para generar' });
       return;
     }
 
-    const labelIndex = parseLabelIndex(req.query.index, preview.labels.length);
-    const html = await buildLabelsHtml(preview.labels, {
+    const labelIndex = parseLabelIndex(req.query.index, labels.length);
+    const html = await buildLabelsHtml(labels, {
       preview: true,
       labelIndex,
     });
@@ -174,13 +216,23 @@ router.get('/orders/:id/labels/pdf', async (req: Request, res: Response) => {
     }
 
     const templateOverride = resolveTemplateOverride(req.query.template);
-    const preview = buildLabelPreview(order, templateOverride);
-    if (preview.labels.length === 0) {
+    const { labels } = resolveLabelsFromRequest(
+      order,
+      req.query as Record<string, unknown>,
+      templateOverride,
+    );
+    if (labels.length === 0) {
       res.status(400).json({ error: 'La orden no tiene etiquetas para generar' });
       return;
     }
 
-    const pdf = await generateLabelsPdf(preview.labels);
+    const labelIndex = parseLabelIndex(req.query.index, labels.length);
+    const labelsToPrint =
+      labelIndex !== undefined
+        ? labels.slice(labelIndex, labelIndex + 1)
+        : labels;
+
+    const pdf = await generateLabelsPdf(labelsToPrint);
     const filename = `etiquetas-${order.name.replace(/\//g, '-')}.pdf`;
 
     const download = req.query.download === '1' || req.query.download === 'true';
@@ -212,13 +264,17 @@ router.post('/orders/:id/labels/generate', async (req: Request, res: Response) =
     const templateOverride = resolveTemplateOverride(
       req.body?.template ?? req.query.template,
     );
-    const preview = buildLabelPreview(order, templateOverride);
-    if (preview.labels.length === 0) {
+    const { labels } = resolveLabelsFromRequest(
+      order,
+      { ...(req.query as Record<string, unknown>), ...(req.body ?? {}) },
+      templateOverride,
+    );
+    if (labels.length === 0) {
       res.status(400).json({ error: 'La orden no tiene etiquetas para generar' });
       return;
     }
 
-    const pdf = await generateLabelsPdf(preview.labels);
+    const pdf = await generateLabelsPdf(labels);
     const filename = `etiquetas-${order.name.replace(/\//g, '-')}.pdf`;
 
     const download = req.query.download === '1' || req.query.download === 'true';
