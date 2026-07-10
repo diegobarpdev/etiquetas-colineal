@@ -6,6 +6,25 @@ const DEFAULT_SETTINGS = {
   printerName: '',
   printerUid: '',
   copies: 1,
+  printMode: 'tear',
+  thermalMethod: 'transfer',
+  mediaType: 'gap',
+  applyHardware: true,
+};
+
+const PRINT_MODE_SGD = {
+  tear: 'T',
+  cutter: 'C',
+};
+
+const THERMAL_METHOD_SGD = {
+  transfer: 'thermal trans',
+  direct: 'direct thermal',
+};
+
+const MEDIA_TYPE_SGD = {
+  gap: 'gap/notch',
+  continuous: 'continuous',
 };
 
 let browserPrintReady = false;
@@ -82,6 +101,64 @@ function listZebraPrinters() {
 
 function findDeviceByUid(uid) {
   return zebraDevices.find((device) => device.uid === uid) || null;
+}
+
+function resolveZebraDevice(settings) {
+  return (
+    findDeviceByUid(settings.printerUid) ||
+    zebraDevices.find((entry) => entry.name === settings.printerName) ||
+    null
+  );
+}
+
+function buildHardwareSgdPayload(settings) {
+  const printMode = PRINT_MODE_SGD[settings.printMode] || PRINT_MODE_SGD.tear;
+  const thermalMethod =
+    THERMAL_METHOD_SGD[settings.thermalMethod] || THERMAL_METHOD_SGD.transfer;
+  const mediaType = MEDIA_TYPE_SGD[settings.mediaType] || MEDIA_TYPE_SGD.gap;
+
+  const commands = [
+    `! U1 setvar "media.printmode" "${printMode}"`,
+    `! U1 setvar "ezpl.print_method" "${thermalMethod}"`,
+    `! U1 setvar "ezpl.media_type" "${mediaType}"`,
+  ];
+
+  return commands.map((line) => `${line}\r\n`).join('');
+}
+
+function sendRawToDevice(device, payload) {
+  return new Promise((resolve, reject) => {
+    if (typeof device.send !== 'function') {
+      reject(new Error('La impresora no soporta envío de configuración'));
+      return;
+    }
+
+    device.send(
+      payload,
+      () => resolve(),
+      (error) => reject(error || new Error('Error al enviar configuración a la impresora')),
+    );
+  });
+}
+
+async function applyHardwareSettings(settings = loadSettings()) {
+  if (!browserPrintReady) {
+    await initZebraBrowserPrint();
+  }
+
+  const device = resolveZebraDevice(settings);
+  if (!device) {
+    throw new Error('Selecciona una impresora Zebra en la configuración');
+  }
+
+  await sendRawToDevice(device, buildHardwareSgdPayload(settings));
+
+  return {
+    device: device.name,
+    printMode: settings.printMode,
+    thermalMethod: settings.thermalMethod,
+    mediaType: settings.mediaType,
+  };
 }
 
 function sendPdfToZebra(device, pdfUrl) {
@@ -175,12 +252,14 @@ async function printPdf(pdfUrl, settings = loadSettings()) {
       await initZebraBrowserPrint();
     }
 
-    const device =
-      findDeviceByUid(settings.printerUid) ||
-      zebraDevices.find((entry) => entry.name === settings.printerName);
+    const device = resolveZebraDevice(settings);
 
     if (!device) {
       throw new Error('Selecciona una impresora Zebra en la configuración');
+    }
+
+    if (settings.applyHardware !== false) {
+      await applyHardwareSettings(settings);
     }
 
     for (let copy = 0; copy < copies; copy += 1) {
@@ -204,6 +283,7 @@ window.PrinterConfig = {
   saveSettings,
   initZebraBrowserPrint,
   listZebraPrinters,
+  applyHardwareSettings,
   printPdf,
   get browserPrintReady() {
     return browserPrintReady;

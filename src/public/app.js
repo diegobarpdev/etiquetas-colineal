@@ -49,6 +49,13 @@ const togglePrinterSettings = document.getElementById('toggle-printer-settings')
 const networkUrlBanner = document.getElementById('network-url-banner');
 
 const printerMode = document.getElementById('printer-mode');
+const zebraHardwareSection = document.getElementById('zebra-hardware-section');
+const systemHardwareHint = document.getElementById('system-hardware-hint');
+const zebraPrintMode = document.getElementById('zebra-print-mode');
+const zebraThermalMethod = document.getElementById('zebra-thermal-method');
+const zebraMediaType = document.getElementById('zebra-media-type');
+const zebraApplyHardware = document.getElementById('zebra-apply-hardware');
+const applyHardwareBtn = document.getElementById('apply-hardware-btn');
 
 const selectionDetails = document.getElementById('selection-details');
 const selectionGroupsEl = document.getElementById('selection-groups');
@@ -445,6 +452,10 @@ function readPrinterSettingsFromUi() {
         : systemPrinterName.value.trim(),
     printerUid: printerMode.value === 'zebra' ? zebraPrinterSelect.value : '',
     copies: Math.max(1, Number(printerCopies.value) || 1),
+    printMode: zebraPrintMode.value,
+    thermalMethod: zebraThermalMethod.value,
+    mediaType: zebraMediaType.value,
+    applyHardware: zebraApplyHardware.checked,
   };
 }
 
@@ -452,6 +463,10 @@ function applyPrinterSettingsToUi(settings) {
   printerMode.value = settings.mode || 'system';
   printerCopies.value = String(settings.copies || 1);
   systemPrinterName.value = settings.printerName || '';
+  zebraPrintMode.value = settings.printMode || 'tear';
+  zebraThermalMethod.value = settings.thermalMethod || 'transfer';
+  zebraMediaType.value = settings.mediaType || 'gap';
+  zebraApplyHardware.checked = settings.applyHardware !== false;
   updatePrinterModeUi();
 
   if (settings.printerUid) {
@@ -478,6 +493,8 @@ function updatePrinterModeUi() {
   const isZebra = printerMode.value === 'zebra';
   systemPrinterRow.classList.toggle('hidden', isZebra);
   zebraPrinterRow.classList.toggle('hidden', !isZebra);
+  zebraHardwareSection.classList.toggle('hidden', !isZebra);
+  systemHardwareHint.classList.toggle('hidden', isZebra);
 }
 
 function renderZebraPrinterOptions(devices, selectedUid = '') {
@@ -749,6 +766,23 @@ async function handleDownloadPdf() {
   }
 }
 
+async function handleApplyHardware() {
+  hideError();
+  showStatus('Aplicando configuración en la impresora…');
+  applyHardwareBtn.disabled = true;
+  try {
+    const settings = readPrinterSettingsFromUi();
+    PrinterConfig.saveSettings(settings);
+    const result = await PrinterConfig.applyHardwareSettings(settings);
+    showPrinterSaveStatus('Configuración guardada en ' + result.device);
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    hideStatus();
+    applyHardwareBtn.disabled = false;
+  }
+}
+
 function handlePrinterModeChange() {
   updatePrinterModeUi();
   persistPrinterSettings();
@@ -820,6 +854,11 @@ printerMode.addEventListener('change', handlePrinterModeChange);
 printerCopies.addEventListener('change', persistPrinterSettings);
 systemPrinterName.addEventListener('change', persistPrinterSettings);
 zebraPrinterSelect.addEventListener('change', persistPrinterSettings);
+zebraPrintMode.addEventListener('change', persistPrinterSettings);
+zebraThermalMethod.addEventListener('change', persistPrinterSettings);
+zebraMediaType.addEventListener('change', persistPrinterSettings);
+zebraApplyHardware.addEventListener('change', persistPrinterSettings);
+applyHardwareBtn.addEventListener('click', handleApplyHardware);
 refreshPrintersBtn.addEventListener('click', refreshZebraPrinters);
 togglePrinterSettings.addEventListener('click', handleTogglePrinterSettings);
 tabHtml.addEventListener('click', () => switchPreviewTab('html'));

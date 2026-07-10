@@ -53,6 +53,46 @@
           </select>
           <p id="zebra-status" class="printer-hint">Requiere Zebra Browser Print instalado.</p>
         </div>
+        <div id="zebra-hardware-section" class="printer-field-wide printer-hardware hidden">
+          <p class="printer-hardware-title">Configuración de la Zebra</p>
+          <p class="printer-hint">
+            Se envía a la impresora antes de imprimir (modo Zebra Browser Print). Evita que el PDF cambie corte, transferencia o tipo de medio.
+          </p>
+          <div class="printer-grid printer-hardware-grid">
+            <div class="printer-field">
+              <label for="zebra-print-mode">Modo de impresión</label>
+              <select id="zebra-print-mode">
+                <option value="tear">Corte manual (tear-off)</option>
+                <option value="cutter">Cortadora</option>
+              </select>
+            </div>
+            <div class="printer-field">
+              <label for="zebra-thermal-method">Método</label>
+              <select id="zebra-thermal-method">
+                <option value="transfer">Transferencia térmica</option>
+                <option value="direct">Térmica directa</option>
+              </select>
+            </div>
+            <div class="printer-field">
+              <label for="zebra-media-type">Tipo de medio</label>
+              <select id="zebra-media-type">
+                <option value="gap">Muesca (gap/notch)</option>
+                <option value="continuous">Continua</option>
+              </select>
+            </div>
+          </div>
+          <label class="printer-checkbox">
+            <input type="checkbox" id="zebra-apply-hardware" checked />
+            Aplicar esta configuración antes de cada impresión
+          </label>
+          <button type="button" id="apply-hardware-btn" class="secondary compact">
+            Guardar ahora en la impresora
+          </button>
+        </div>
+        <p id="system-hardware-hint" class="printer-field-wide printer-hint hidden">
+          Con modo Sistema el navegador no puede fijar corte/transferencia/medio. Usa
+          <strong>Zebra Browser Print</strong> o guarda los valores por defecto en la impresora con Zebra Setup Utilities.
+        </p>
       </div>
       <p id="printer-save-status" class="printer-save-status hidden" role="status"></p>
     </section>

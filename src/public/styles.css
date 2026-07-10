@@ -154,6 +154,40 @@ body {
   color: #047857;
 }
 
+.printer-hardware {
+  margin-top: 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #dbe3ee;
+}
+
+.printer-hardware-title {
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.printer-hardware-grid {
+  margin-top: 0.5rem;
+}
+
+.printer-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+  font-size: 0.82rem;
+  color: #334155;
+}
+
+.printer-checkbox input {
+  width: auto;
+}
+
+#apply-hardware-btn {
+  margin-top: 0.55rem;
+}
+
 .status-banner,
 .error-banner {
   flex-shrink: 0;
