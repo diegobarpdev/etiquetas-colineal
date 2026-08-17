@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agente Zebra — Browser Print</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Agente Zebra</h1>
+      <p class="sub">PDF → ZPL → Browser Print (solo USB)</p>
+    </div>
+    <div class="top-actions">
+      <span id="alive" class="pill pill-off">…</span>
+      <button type="button" id="btn-refresh" class="btn">Actualizar</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <h2>Estado</h2>
+      <dl class="kv" id="status-kv"></dl>
+      <p id="status-hint" class="hint"></p>
+    </section>
+
+    <section class="card">
+      <h2>Mapa USB (obligatorio con 2 impresoras)</h2>
+      <p class="hint">Usa los device <strong>usb</strong> (serie 52n… / 52j…). Los «driver» ZDesigner recortan el tamaño.</p>
+      <label class="field">
+        <span>ADHESIVO → UID USB</span>
+        <select id="map-adhesivo"></select>
+      </label>
+      <label class="field">
+        <span>PAPEL → UID USB</span>
+        <select id="map-papel"></select>
+      </label>
+      <button type="button" id="btn-save-map" class="btn btn-primary">Guardar mapa USB</button>
+    </section>
+
+    <section class="card">
+      <h2>Devices Browser Print</h2>
+      <p id="devices-hint" class="hint"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Rol</th><th>Nombre</th><th>UID</th><th>Conn</th></tr>
+          </thead>
+          <tbody id="devices-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Último trabajo</h2>
+      <pre id="last-job" class="mono">Sin trabajos aún</pre>
+    </section>
+
+    <section class="card actions-card">
+      <h2>Acciones</h2>
+      <label class="field">
+        <span>UID USB para prueba</span>
+        <select id="test-printer"></select>
+      </label>
+      <div class="row">
+        <button type="button" id="btn-redetect" class="btn">Re-detectar</button>
+        <button type="button" id="btn-test" class="btn btn-primary">Imprimir prueba 100×150</button>
+      </div>
+      <p class="hint">Elige un UID <strong>usb</strong>. Si eliges «driver», el tamaño saldrá como conforme.</p>
+      <p id="action-msg" class="msg" hidden></p>
+    </section>
+  </main>
+
+  <script src="/panel.js"></script>
+</body>
+</html>

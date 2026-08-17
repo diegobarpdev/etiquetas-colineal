@@ -1,0 +1,173 @@
+// Launcher del instalador del agente de impresión Etiquetas Colineal.
+// Compilar con build-exe.ps1 (incrustá InstallPayload.ps1 como base64).
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Security.Principal;
+using System.Text;
+
+namespace EtiquetasPrintAgentInstaller
+{
+    internal static class Program
+    {
+        // Reemplazado en build-exe.ps1
+        private const string PayloadBase64 = "@@PAYLOAD_BASE64@@";
+        private const string DefaultServer = "http://192.168.2.28:3000";
+        private const string DefaultRoot = @"C:\Etiquetas\print-agent";
+
+        [STAThread]
+        private static int Main(string[] args)
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.Title = "Instalar Agente Etiquetas Colineal";
+
+            if (!IsAdministrator())
+            {
+                Console.WriteLine("Se requieren permisos de Administrador.");
+                Console.WriteLine("Cierra y vuelve a ejecutar el .exe (acepta el UAC).");
+                PauseIfInteractive(args);
+                return 1;
+            }
+
+            string server = DefaultServer;
+            string root = DefaultRoot;
+            bool pause = true;
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                string a = args[i];
+                if (string.Equals(a, "/S", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(a, "/SILENT", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(a, "-Silent", StringComparison.OrdinalIgnoreCase))
+                {
+                    pause = false;
+                }
+                else if (a.StartsWith("/SERVER=", StringComparison.OrdinalIgnoreCase))
+                {
+                    server = a.Substring(8).Trim().Trim('"');
+                }
+                else if (a.StartsWith("/DIR=", StringComparison.OrdinalIgnoreCase))
+                {
+                    root = a.Substring(5).Trim().Trim('"');
+                }
+                else if (string.Equals(a, "/?", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(a, "-h", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(a, "--help", StringComparison.OrdinalIgnoreCase))
+                {
+                    PrintHelp();
+                    PauseIfInteractive(args);
+                    return 0;
+                }
+            }
+
+            string tempPs1 = null;
+            try
+            {
+                byte[] bytes = Convert.FromBase64String(PayloadBase64);
+                string script = Encoding.UTF8.GetString(bytes);
+                tempPs1 = Path.Combine(Path.GetTempPath(),
+                    "etiquetas-install-payload-" + Guid.NewGuid().ToString("N") + ".ps1");
+                File.WriteAllText(tempPs1, script, new UTF8Encoding(false));
+
+                Console.WriteLine("=== Etiquetas Colineal — Instalador EXE ===");
+                Console.WriteLine("Servidor: " + server);
+                Console.WriteLine("Destino:  " + root);
+                Console.WriteLine();
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = string.Format(
+                        "-NoProfile -ExecutionPolicy Bypass -File \"{0}\" -ServerUrl \"{1}\" -InstallRoot \"{2}\"",
+                        tempPs1, server, root),
+                    UseShellExecute = false,
+                    CreateNoWindow = false
+                };
+
+                using (var p = Process.Start(psi))
+                {
+                    if (p == null)
+                    {
+                        Console.WriteLine("ERROR: no se pudo iniciar PowerShell.");
+                        if (pause) Pause();
+                        return 2;
+                    }
+                    p.WaitForExit();
+                    int code = p.ExitCode;
+                    if (code == 0)
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine("Listo.");
+                    }
+                    else
+                    {
+                        Console.WriteLine();
+                        Console.WriteLine("La instalación falló (código " + code + ").");
+                    }
+                    if (pause) Pause();
+                    return code;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("ERROR: " + ex.Message);
+                if (pause) Pause();
+                return 3;
+            }
+            finally
+            {
+                if (tempPs1 != null)
+                {
+                    try { File.Delete(tempPs1); } catch { }
+                }
+            }
+        }
+
+        private static void PrintHelp()
+        {
+            Console.WriteLine("Instalar-Agente-Etiquetas.exe [opciones]");
+            Console.WriteLine();
+            Console.WriteLine("  /SERVER=http://host:3000   Servidor de etiquetas");
+            Console.WriteLine("  /DIR=C:\\ruta\\print-agent   Carpeta de instalación");
+            Console.WriteLine("  /S                        Sin pausa al final");
+            Console.WriteLine();
+            Console.WriteLine("Por defecto: " + DefaultServer + " → " + DefaultRoot);
+            Console.WriteLine("Requisito: Zebra Browser Print instalado en la PC.");
+        }
+
+        private static bool IsAdministrator()
+        {
+            try
+            {
+                using (var id = WindowsIdentity.GetCurrent())
+                {
+                    var principal = new WindowsPrincipal(id);
+                    return principal.IsInRole(WindowsBuiltInRole.Administrator);
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void PauseIfInteractive(string[] args)
+        {
+            foreach (string a in args)
+            {
+                if (string.Equals(a, "/S", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(a, "/SILENT", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(a, "-Silent", StringComparison.OrdinalIgnoreCase))
+                    return;
+            }
+            Pause();
+        }
+
+        private static void Pause()
+        {
+            Console.WriteLine();
+            Console.Write("Pulsa Enter para cerrar...");
+            try { Console.ReadLine(); } catch { }
+        }
+    }
+}

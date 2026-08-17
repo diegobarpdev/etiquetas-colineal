@@ -4,3 +4,10 @@ dist/
 *.log
 .DS_Store
 coverage/
+
+logs/
+data/printers-config.json
+data/print-agent-dist/
+print-agent/bin/*.exe
+_legacy_*/
+

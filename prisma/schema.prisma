@@ -97,3 +97,14 @@ model ManufacturingOrderLine {
 
   @@map("manufacturing_order_lines")
 }
+
+/// Inspectores locales (no Odoo) para elegir en impresión.
+model Inspector {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("inspectors")
+}

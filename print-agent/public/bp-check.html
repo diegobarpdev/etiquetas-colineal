@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prueba Browser Print</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.25rem; }
+    pre { background: #111; color: #ddd; padding: 0.75rem; overflow: auto; border-radius: 8px; }
+    button, select { font: inherit; padding: 0.45rem 0.75rem; margin: 0.25rem 0.25rem 0.25rem 0; }
+    .ok { color: #0a7; }
+    .err { color: #c33; }
+    .hint { color: #666; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>Prueba Zebra Browser Print</h1>
+  <p class="hint">Abre esta página en la PC USB (donde está Browser Print). No necesitas la carpeta Sample.</p>
+
+  <p>
+    <button type="button" id="btn-list">1. Listar impresoras</button>
+    <select id="devices" style="min-width: 16rem"><option value="">(ninguna)</option></select>
+  </p>
+  <p>
+    <button type="button" id="btn-zpl">2. Send ZPL (prueba)</button>
+  </p>
+  <p id="msg"></p>
+  <pre id="out">Pulsa «Listar impresoras»…</pre>
+
+  <script>
+    const BP = 'http://127.0.0.1:9100';
+    const out = document.getElementById('out');
+    const msg = document.getElementById('msg');
+    const sel = document.getElementById('devices');
+    let deviceMap = {};
+
+    function show(text, ok) {
+      msg.textContent = text;
+      msg.className = ok === true ? 'ok' : ok === false ? 'err' : '';
+    }
+
+    function normalizeList(payload) {
+      if (!payload) return [];
+      if (Array.isArray(payload)) return payload;
+      if (Array.isArray(payload.printer)) return payload.printer;
+      if (Array.isArray(payload.deviceList)) return payload.deviceList;
+      return Object.values(payload).filter((v) => v && (v.uid || v.name));
+    }
+
+    async function listDevices() {
+      show('Consultando Browser Print…');
+      try {
+        const res = await fetch(BP + '/available');
+        const data = await res.json();
+        out.textContent = JSON.stringify(data, null, 2);
+        const list = normalizeList(data);
+        deviceMap = {};
+        sel.innerHTML = '';
+        if (!list.length) {
+          sel.innerHTML = '<option value="">(0 devices)</option>';
+          show('Browser Print responde, pero no ve impresoras. Marca Driver Search, cierra Designer/Odoo y reinicia Browser Print.', false);
+          return;
+        }
+        list.forEach((d, i) => {
+          const key = String(i);
+          deviceMap[key] = d;
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = (d.name || d.uid || 'device') + (d.connection ? ' [' + d.connection + ']' : '');
+          sel.appendChild(opt);
+        });
+        show('OK: ' + list.length + ' impresora(s). Elige una y pulsa Send ZPL.', true);
+      } catch (e) {
+        out.textContent = String(e);
+        show('No hay Browser Print en :9100. ¿Icono Zebra en la bandeja?', false);
+      }
+    }
+
+    async function sendZpl() {
+      const d = deviceMap[sel.value];
+      if (!d) {
+        show('Primero lista y elige una impresora.', false);
+        return;
+      }
+      const zpl =
+        '^XA^FO50,50^A0N,40,40^FDPRUEBA BROWSER PRINT^FS^FO50,120^A0N,30,30^FD' +
+        String(d.name || d.uid).replace(/\^/g, '') +
+        '^FS^XZ';
+      show('Enviando ZPL…');
+      try {
+        const body = {
+          device: {
+            name: d.name,
+            uid: d.uid,
+            connection: d.connection || 'usb',
+            deviceType: d.deviceType || 'printer',
+            version: d.version != null ? d.version : 2,
+            provider: d.provider || 'com.zebra.ds.webdriver.desktop.provider.DefaultDeviceProvider',
+            manufacturer: d.manufacturer || 'Zebra Technologies',
+          },
+          data: zpl,
+        };
+        const res = await fetch(BP + '/write', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const text = await res.text();
+        out.textContent = 'HTTP ' + res.status + '\n' + text;
+        if (!res.ok) {
+          show('Fallo al imprimir: HTTP ' + res.status, false);
+          return;
+        }
+        show('ZPL enviado a «' + (d.name || d.uid) + '». Mira la impresora.', true);
+      } catch (e) {
+        out.textContent = String(e);
+        show('Error al escribir: ' + e.message, false);
+      }
+    }
+
+    document.getElementById('btn-list').onclick = listDevices;
+    document.getElementById('btn-zpl').onclick = sendZpl;
+  </script>
+</body>
+</html>

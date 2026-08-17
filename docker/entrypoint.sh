@@ -20,11 +20,15 @@ socket.on('error', () => process.exit(1));
 done
 
 echo "Aplicando migraciones..."
-npx prisma migrate deploy
+if [ "${DATABASE_READ_ONLY:-false}" = "true" ]; then
+  echo "DATABASE_READ_ONLY=true — se omiten migraciones y seed (Odoo producción)."
+else
+  npx prisma migrate deploy
 
-if [ "${SEED_ON_START:-true}" = "true" ]; then
-  echo "Cargando datos iniciales..."
-  npx tsx prisma/seed.ts
+  if [ "${SEED_ON_START:-false}" = "true" ]; then
+    echo "Cargando datos iniciales..."
+    npx tsx prisma/seed.ts
+  fi
 fi
 
 echo "Iniciando aplicación..."

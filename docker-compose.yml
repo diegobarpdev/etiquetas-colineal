@@ -1,8 +1,11 @@
 services:
+  # Postgres local opcional (perfil dev). Producción usa Odoo RO.
   postgres:
     image: postgres:16-alpine
     container_name: etiquetas-colineal-db
     restart: unless-stopped
+    profiles:
+      - dev
     ports:
       - "5433:5432"
     environment:
@@ -24,15 +27,14 @@ services:
     shm_size: '1gb'
     ports:
       - "3000:3000"
+      - "3010:3010"
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql://colineal:colineal@postgres:5432/etiquetas?schema=public
       HOST: 0.0.0.0
-      PORT: 3000
+      WEB_PORT: 3000
+      API_PORT: 3010
       PUBLIC_URL: ${PUBLIC_URL:-}
-      SEED_ON_START: "true"
-    depends_on:
-      postgres:
-        condition: service_healthy
 
 volumes:
   postgres_data:

@@ -5,12 +5,27 @@ import { join } from 'path';
 const prisma = new PrismaClient();
 
 const TEMPLATE_CATALOG = [
-  { code: 'bulto-estandar', name: 'Producto terminado (muebles)' },
-  { code: 'colchon-v1', name: 'Producto terminado colchones v1' },
-  { code: 'colchon-v2', name: 'Producto terminado colchones v2' },
-  { code: 'carpinteria', name: 'Producto conforme Carpenter' },
-  { code: 'producto-conforme', name: 'Producto conforme' },
-  { code: 'producto-conforme-papel', name: 'Producto conforme de papel' },
+  { code: 'carpinteria', name: 'ADHESIVO - CARPENTER' },
+  { code: 'producto-conforme', name: 'ADHESIVO - PRODUCTO CONFORME' },
+  { code: 'bulto-estandar', name: 'ADHESIVO - PRODUCTO TERMINADO' },
+  {
+    code: 'producto-terminado-carpenter',
+    name: 'ADHESIVO - PRODUCTO TERMINADO CARPENTER',
+  },
+  {
+    code: 'colchon-v1',
+    name: 'ADHESIVO - PRODUCTO TERMINADO COLCHONES HORIZONTAL',
+  },
+  {
+    code: 'colchon-v2',
+    name: 'ADHESIVO - PRODUCTO TERMINADO COLCHONES VERTICAL',
+  },
+  { code: 'carpenter-tela', name: 'TELA - CARPENTER' },
+  { code: 'producto-conforme-papel', name: 'TELA - PRODUCTO CONFORME' },
+  {
+    code: 'producto-conforme-papel-colchones',
+    name: 'TELA - PRODUCTO CONFORME COLCHONES',
+  },
 ] as const;
 
 const LEGACY_TEMPLATE_CODES = ['velador-simple', 'materia-prima'];
